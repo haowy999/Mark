@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>喝点儿 Sober</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Sober</p>
+          <h1>喝点儿</h1>
+        </div>
+        <div class="top-actions">
+          <button class="ghost-button" id="exportButton" type="button">导出</button>
+          <label class="ghost-button file-action">
+            导入
+            <input id="importInput" type="file" accept="application/json" />
+          </label>
+          <button class="primary-button" id="newBeerButton" type="button">新增</button>
+        </div>
+      </header>
+
+      <section class="stats-grid" aria-label="统计">
+        <article class="stat-card">
+          <span class="stat-value" id="totalCount">0</span>
+          <span class="stat-label">全部</span>
+        </article>
+        <article class="stat-card">
+          <span class="stat-value" id="doneCount">0</span>
+          <span class="stat-label">已喝</span>
+        </article>
+        <article class="stat-card">
+          <span class="stat-value" id="wishlistCount">0</span>
+          <span class="stat-label">想喝</span>
+        </article>
+        <article class="stat-card">
+          <span class="stat-value" id="repeatCount">0</span>
+          <span class="stat-label">会复喝</span>
+        </article>
+      </section>
+
+      <section class="toolbar" aria-label="筛选">
+        <label class="search-box">
+          <span>搜索</span>
+          <input id="searchInput" type="search" placeholder="名称、酒厂、风格、标签" />
+        </label>
+        <label>
+          <span>排序</span>
+          <select id="sortSelect">
+            <option value="updatedAt">最近更新</option>
+            <option value="drinkDate">喝的日期</option>
+            <option value="rating">评分最高</option>
+            <option value="name">名称</option>
+          </select>
+        </label>
+      </section>
+
+      <section class="tabbar" aria-label="浏览方式">
+        <button class="tab-button active" type="button" data-view="all">全部</button>
+        <button class="tab-button" type="button" data-view="brewery">酒厂</button>
+        <button class="tab-button" type="button" data-view="style">风格</button>
+        <button class="tab-button" type="button" data-view="highRating">高分</button>
+        <button class="tab-button" type="button" data-view="repeat">会复喝</button>
+      </section>
+
+      <section class="content-grid">
+        <div class="beer-list" id="beerList" aria-live="polite"></div>
+        <aside class="empty-panel" id="emptyPanel">
+          <h2>还没有啤酒记录</h2>
+          <p>先记下一款最近喝过的，或者把想喝清单放进来。</p>
+          <button class="primary-button" id="emptyNewButton" type="button">添加第一款</button>
+        </aside>
+      </section>
+    </main>
+
+    <dialog id="beerDialog" class="beer-dialog">
+      <form method="dialog" class="beer-form" id="beerForm">
+        <header class="dialog-header">
+          <div>
+            <p class="eyebrow">Record</p>
+            <h2 id="dialogTitle">新增啤酒</h2>
+          </div>
+          <button class="icon-button" id="closeDialogButton" type="button" aria-label="关闭">×</button>
+        </header>
+
+        <input id="beerId" type="hidden" />
+
+        <div class="form-grid">
+          <label class="cover-picker">
+            <input id="imageInput" type="file" accept="image/*" />
+            <img id="imagePreview" alt="" />
+            <span id="imageHint"><strong>+</strong>添加图片</span>
+          </label>
+
+          <div class="field-stack">
+            <label>
+              <span>啤酒名称</span>
+              <input id="nameInput" required maxlength="80" placeholder="例如：迷失海岸 海鲸三倍 IPA" />
+            </label>
+            <label>
+              <span>酒厂</span>
+              <input id="breweryInput" maxlength="80" placeholder="例如：Lost Coast Brewery" />
+            </label>
+            <div class="two-columns">
+              <label>
+                <span>状态</span>
+                <select id="formStatusInput">
+                  <option value="wishlist">想喝</option>
+                  <option value="done">已喝</option>
+                  <option value="avoid">不想再喝</option>
+                </select>
+              </label>
+              <label>
+                <span>评分</span>
+                <input id="ratingInput" type="hidden" />
+                <div class="rating-picker" id="ratingPicker" role="radiogroup" aria-label="评分"></div>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <div class="two-columns">
+            <label>
+              <span>喝的日期</span>
+              <input id="drinkDateInput" type="date" />
+            </label>
+            <label>
+              <span>风格大类</span>
+              <select id="styleGroupInput"></select>
+            </label>
+          </div>
+          <label>
+            <span>具体风格</span>
+            <input id="styleInput" list="styleOptions" maxlength="80" placeholder="输入关键词，或从下拉里选" />
+            <datalist id="styleOptions"></datalist>
+          </label>
+          <div class="two-columns">
+            <label>
+              <span>酒精度 ABV</span>
+              <div class="suffix-input">
+                <input id="abvInput" inputmode="decimal" maxlength="8" placeholder="例如：6.5" />
+                <span>%</span>
+              </div>
+            </label>
+            <label>
+              <span>苦度 IBU</span>
+              <input id="ibuInput" inputmode="numeric" maxlength="8" placeholder="例如：60" />
+            </label>
+          </div>
+          <div class="two-columns">
+            <label>
+              <span>地点名称</span>
+              <input id="placeNameInput" maxlength="80" placeholder="家里 / 酒吧 / 餐厅" />
+            </label>
+            <label>
+              <span>地址</span>
+              <input id="addressInput" maxlength="120" placeholder="可选" />
+            </label>
+          </div>
+          <label>
+            <span>标签</span>
+            <input id="tagsInput" maxlength="160" placeholder="用逗号分隔，例如：浑浊, 柑橘, 高酒精度" />
+          </label>
+          <label>
+            <span>备注</span>
+            <textarea id="notesInput" maxlength="1000" rows="5" placeholder="口感、香气、当时场景，或者下次是否还想买。"></textarea>
+          </label>
+          <label class="checkbox-field">
+            <input id="repeatInput" type="checkbox" />
+            <span>会复喝</span>
+          </label>
+        </div>
+
+        <footer class="dialog-actions">
+          <button class="danger-button" id="deleteButton" type="button">删除</button>
+          <span class="dialog-spacer"></span>
+          <button class="ghost-button" id="cancelButton" type="button">取消</button>
+          <button class="primary-button" id="saveButton" type="submit">保存</button>
+        </footer>
+      </form>
+    </dialog>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
